@@ -1,0 +1,29 @@
+{
+  "name": "Datastore - Base",
+  "tree": {
+    "$className": "DataModel",
+
+    "ReplicatedStorage": {
+      "Comm": {
+        "$className": "RemoteFunction"
+      }
+    },
+
+    "ServerScriptService": {
+      "Server": {
+        "$path": "src/server"
+      }
+    },
+
+    "StarterGui": {
+      "Ui": {
+        "$path": "src/client",
+
+        "Packages": {
+          "$path": "Packages"
+        }
+      }
+    }
+
+  }
+}

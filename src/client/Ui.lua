@@ -44,12 +44,18 @@ local function StringUi(i,v,Tab,Update,Start) -- i,v, Tab Spacing, Update Functi
             Color = Config.IndexColors[typeof(i)]
         end
     end
-    local vColor = Color3.new(1,1,1);
+    local vColor = Value(Color3.new(1,1,1));
     if Config.ValueColors[typeof(v)] then
-        vColor = Config.ValueColors[typeof(v)]
+        vColor:set(Config.ValueColors[typeof(v)])
     end
 
     local BgTransparency = Value(1)
+
+    local Text = Value(tostring(v))
+    local TextRef = Value()
+    if typeof(v) == "string" then
+        Text:set('"' .. Text:get() .. '"')
+    end
 
     return New "Frame" {
         BackgroundTransparency = 1;
@@ -84,14 +90,76 @@ local function StringUi(i,v,Tab,Update,Start) -- i,v, Tab Spacing, Update Functi
                 BackgroundTransparency = 1;
                 Position = UDim2.new(0.5,10,0,0);
                 Size = UDim2.new(0.5,-15,0,25);
-                Text = tostring(v);
-                TextColor3 = vColor;
+                Text = Computed(function()
+                    return Text:get()
+                end);
+                TextColor3 = Computed(function()
+                    return vColor:get()
+                end);
                 TextSize = 20;
                 TextEditable = true;
                 ClearTextOnFocus = false;
                 TextXAlignment = Enum.TextXAlignment.Left;
                 -- Edit Functions
-
+                [Ref] = TextRef;
+                [Event "FocusLost"] = function()
+                    local NewText = TextRef:get().Text
+                    local NewValue = nil
+                    if NewText == "true" then
+                        NewValue = true;
+                    elseif NewText == "false" then
+                        NewValue = false;
+                    elseif NewText == "nil" then
+                        NewValue = nil
+                    elseif tonumber(NewText) ~= nil then
+                        NewValue = tonumber(NewText)
+                    else
+                        -- String
+                        if string.sub(NewText,1,1) == '"' and string.sub(NewText,string.len(NewText)) == '"' then
+                            -- Remove "
+                            NewValue = tostring(string.sub(NewText,2,(string.len(NewText) - 1)))
+                        elseif string.sub(NewText,1,1) == "'" and string.sub(NewText,string.len(NewText)) == "'" then
+                            -- Remove '
+                            NewValue = tostring(string.sub(NewText,2,(string.len(NewText) - 1)))
+                            NewText = '"' .. NewValue .. '"'
+                        else
+                            NewValue = tostring(NewText)
+                            NewText = '"' .. NewValue .. '"'
+                        end
+                    end
+                    Text:set(NewText)
+                    if Config.ValueColors[typeof(NewValue)] then
+                        vColor:set(Config.ValueColors[typeof(NewValue)])
+                    end
+                    -- Update Value
+                    if v ~= NewValue then
+                        v = NewValue
+                        Update(NewValue)
+                    end
+                end
+            };
+            Delete = New "ImageButton" {
+                BackgroundColor3 = Color3.new(0,0,0);
+                BackgroundTransparency = 0.85;
+                AnchorPoint = Vector2.new(1,0);
+                Position = UDim2.new(1,-5,0,0);
+                Size = UDim2.new(0,25,0,25);
+                Image = "rbxassetid://11293981586";
+                ZIndex = 2;
+                Visible = Computed(function()
+                    if BgTransparency:get() == 1 then
+                        return false
+                    else
+                        return true
+                    end
+                end);
+                [Event "MouseButton1Up"] = function()
+                    local NewText = "nil"
+                    Text:set(NewText)
+                    -- Update Value
+                    v = nil
+                    Update(nil)
+                end
             };
         }
     }
@@ -112,9 +180,9 @@ local function TableUi(i,v,Tab,Update,SetParentSize,Start)
 
     local Count = CountTable(v)
 
-    local vText = "table: ..."
+    local vText = Value("table: ...")
     if Count == 0 then
-        vText = "table: {}"
+        vText:set("table: {}")
     end
 
     local BgTransparency = Value(1)
@@ -161,13 +229,15 @@ local function TableUi(i,v,Tab,Update,SetParentSize,Start)
                 BackgroundTransparency = 1;
                 Position = UDim2.new(0.5,10,0,0);
                 Size = UDim2.new(0.5,-15,0,25);
-                Text = vText;
+                Text = Computed(function()
+                    return vText:get()
+                end);
                 TextColor3 = vColor;
                 TextSize = 20;
-                TextEditable = true;
+                TextEditable = false;
                 ClearTextOnFocus = false;
                 TextXAlignment = Enum.TextXAlignment.Left;
-                -- Edit Functions
+                -- Tables Not Editable.
 
             };
             Dropdown = New "ImageButton" {
@@ -216,23 +286,65 @@ local function TableUi(i,v,Tab,Update,SetParentSize,Start)
                     List = Fusion.ForPairs(v,function(ind,val)
                         local Ui
                         if typeof(val) == "table" then
-                            Ui = TableUi(ind,val,Tab+1,function()
+                            Ui = TableUi(ind,val,Tab+1,function(NewValue)
                                 -- Update Value
+                                v[ind] = NewValue
+                                Update(v)
                             end,function(Size: number)
                                 -- Update Size
                                 ChildrenSize:set(ChildrenSize:get() + Size)
                                 SetParentSize(Size)
                             end)
                         else
-                            Ui = StringUi(ind,val,Tab+1,function()
+                            Ui = StringUi(ind,val,Tab+1,function(NewValue)
                                 -- Update Value
-                                
+                                v[ind] = NewValue
+                                Update(v)
                             end)
                         end
                         return ind, Ui
                     end,function() end)
                 }
-            }
+            };
+            Delete = New "ImageButton" {
+                BackgroundColor3 = Color3.new(0,0,0);
+                BackgroundTransparency = 0.85;
+                AnchorPoint = Vector2.new(1,0);
+                Position = UDim2.new(1,-5,0,0);
+                Size = UDim2.new(0,25,0,25);
+                Image = "rbxassetid://11293981586";
+                ZIndex = 2;
+                Visible = Computed(function()
+                    if BgTransparency:get() == 1 then
+                        return false
+                    else
+                        return true
+                    end
+                end);
+                [Event "MouseButton1Up"] = function()
+                    local NewText = "nil"
+                    vText:set(NewText)
+                    -- Update Value
+                    v = nil
+                    Update(nil)
+                end
+            };
+            --Add = New "ImageButton" {
+            --    BackgroundColor3 = Color3.new(0,0,0);
+            --    BackgroundTransparency = 0.85;
+            --    AnchorPoint = Vector2.new(1,0);
+            --    Position = UDim2.new(1,-30,0,0);
+            --    Size = UDim2.new(0,25,0,25);
+            --    Image = "rbxassetid://11295291707";
+            --    ZIndex = 2;
+            --    Visible = Computed(function()
+            --        if BgTransparency:get() == 1 then
+            --            return false
+            --        else
+            --            return true
+            --       end
+            --    end)
+            --};
         }
     }
 end
@@ -324,7 +436,6 @@ function Module.MainUi()
                         TextColor3 = Color3.new(1,1,1);
                         TextSize = 20;
                         [Event "MouseButton1Up"] = function()
-                            print("Connect", NameInput:get().Text, ScopeInput:get().Text)
                             if NameInput:get().Text == "" then
                                 ErrorTxt:set(400)
                             else
@@ -342,7 +453,6 @@ function Module.MainUi()
                         Position = UDim2.new(0,0,0,142);
                         Size = UDim2.new(1,0,1,-142);
                         Text = Computed(function()
-                            print("Error",Config.Errors[ErrorTxt:get()])
                             return Config.Errors[ErrorTxt:get()]
                         end);
                         TextColor3 = Color3.new(1,1,1);
@@ -391,7 +501,9 @@ function Module.MainUi()
                                 [Ref] = KeyInput;
                                 [Event "FocusLost"] = function()
                                     -- Get Key
-                                    State:GetKey(KeyInput:get().Text)
+                                    if State.CurrentKey:get() ~= KeyInput:get().Text then
+                                        State:GetKey(KeyInput:get().Text)
+                                    end
                                 end;
                                 [Children] = {
                                     New "UIPadding" {
@@ -427,7 +539,7 @@ function Module.MainUi()
                                 Size = UDim2.new(0,30,0,30);
                                 Image = "rbxassetid://11326877050";
                                 [Event "MouseButton1Up"] = function()
-                                    print("Click")
+                                    State:UpdateKey(nil)
                                 end;
                             };
                             Save = New "ImageButton" {
@@ -449,7 +561,7 @@ function Module.MainUi()
                                 Size = UDim2.new(0,30,0,30);
                                 Image = "rbxassetid://11293978505";
                                 [Event "MouseButton1Up"] = function()
-                                    print("Click")
+                                    State:GetKey(KeyInput:get().Text)
                                 end
                             }
                         }
@@ -477,17 +589,17 @@ function Module.MainUi()
                             List = Fusion.ForPairs(State.CurrentData,function(i,v)
                                 local Ui
                                 if typeof(v) == "table" then
-                                    Ui = TableUi(i,v,0,function()
+                                    Ui = TableUi(i,v,0,function(NewValue)
                                         -- Update Value
+                                        State:UpdateKey(NewValue)
                                     end,function(Size: number)
                                         -- Update Size
                                         ScrollSize:set( ScrollSize:get() + Size )
-                                        print(ScrollSize:get())
                                     end,true)
                                 else
-                                    Ui = StringUi(i,v,0,function()
+                                    Ui = StringUi(i,v,0,function(NewValue)
                                         -- Update Value
-                                        
+                                        State:UpdateKey(NewValue)
                                     end,true)
                                 end
                                 ScrollSize:set(25)

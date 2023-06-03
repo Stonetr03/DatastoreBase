@@ -36,13 +36,49 @@ function Module:GetDataStore(Name,Scope,props)
 
 end
 
+-- ProcessTable and CloneData are used to Desync the tables given from Datastore Function
+local function ProcessTable(t)
+    local NewTab = {}
+    for i,v in pairs(t) do
+        if typeof(v) == "table" then
+            NewTab[i] = table.clone(ProcessTable(v))
+        else
+            NewTab[i] = v
+        end
+    end
+    return NewTab
+end
+local function CloneData(Data)
+    if typeof(Data) == "table" then
+        return ProcessTable(table.clone(Data))
+    else
+        return Data
+    end
+end
+
 function Module:GetKey(Key)
     local Data = DataStore:GetKey(Key)
+    Module.CurrentKey:set(Key)
     if Data == nil then
         -- No Data
     else
-        Module.OriginalData:set({[Key] = Data})
-        Module.CurrentData:set({[Key] = Data})
+        Module.OriginalData:set({[Key] = CloneData(Data)})
+        Module.CurrentData:set({[Key] = CloneData(Data)})
+    end
+end
+
+function Module:UpdateKey(NewValue)
+    if Module.CurrentKey:get() ~= "" then
+        if NewValue == nil then
+            -- Delete Key
+            warn("Delete Data")
+        else
+            -- Update Key
+            Module.CurrentData:set({[Module.CurrentKey:get()] = NewValue})
+            print("Update Key")
+            print("Og:",Module.OriginalData:get())
+            print("Nw:",Module.CurrentData:get())
+        end
     end
 end
 

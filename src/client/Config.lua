@@ -18,5 +18,6 @@ return {
         number = Color3.fromRGB(220,20,60);
         boolean = Color3.fromRGB(30,144,255);
         table = Color3.fromRGB(156, 156, 156);
+        ["nil"] = Color3.fromRGB(156, 156, 156);
     };
 }

@@ -42,7 +42,7 @@ game.ReplicatedStorage.Comm.OnServerInvoke = function(p,Req,Name,Value)
         print(Value)
         --DataStore:SetAsync(Name,Value)
     elseif Req == "Remove" then
-        -- Delete Kye
+        -- Delete Key
         --DataStore:RemoveAsync(Name)
     end
 end

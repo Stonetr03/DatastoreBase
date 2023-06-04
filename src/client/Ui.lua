@@ -58,7 +58,7 @@ local function StringUi(i,v,Tab,Update,Start) -- i,v, Tab Spacing, Update Functi
         Text:set('"' .. Text:get() .. '"')
     end
 
-    return New "Frame" {
+    local Ui = New "Frame" {
         BackgroundTransparency = 1;
         Size = UDim2.new(1,0,0,25);
         Name = i;
@@ -147,6 +147,9 @@ local function StringUi(i,v,Tab,Update,Start) -- i,v, Tab Spacing, Update Functi
                         v = NewValue
                         Update(NewValue)
                     end
+                    if v ~= nil then
+                        DelFrameVis:set(false)
+                    end
                 end
             };
             Delete = New "ImageButton" {
@@ -171,10 +174,24 @@ local function StringUi(i,v,Tab,Update,Start) -- i,v, Tab Spacing, Update Functi
                     v = nil
                     DelFrameVis:set(true)
                     Update(nil)
+                    if Config.ValueColors[typeof(nil)] then
+                        vColor:set(Config.ValueColors[typeof(nil)])
+                    end
                 end
             };
         }
     }
+
+    return Ui,function()
+        Text:set("nil")
+        -- Update Value
+        v = nil
+        DelFrameVis:set(true)
+        if Config.ValueColors[typeof(nil)] then
+            vColor:set(Config.ValueColors[typeof(nil)])
+        end
+        return
+    end
 end
 local function TableUi(i,v,Tab,Update,SetParentSize,Start)
     local Color = Color3.new(1,1,1);
@@ -185,9 +202,9 @@ local function TableUi(i,v,Tab,Update,SetParentSize,Start)
             Color = Config.IndexColors[typeof(i)]
         end
     end
-    local vColor = Color3.new(1,1,1);
+    local vColor = Value(Color3.new(1,1,1));
     if Config.ValueColors[typeof(v)] then
-        vColor = Config.ValueColors[typeof(v)]
+        vColor:set(Config.ValueColors[typeof(v)])
     end
 
     local Count = CountTable(v)
@@ -203,7 +220,8 @@ local function TableUi(i,v,Tab,Update,SetParentSize,Start)
 
     local ChildrenSize = Value(0)
 
-    return New "Frame" {
+    local Dels = {} -- Delete Functions
+    local Ui = New "Frame" {
         BackgroundTransparency = 1;
         Size = Computed(function()
             if Open:get() == true then
@@ -254,7 +272,9 @@ local function TableUi(i,v,Tab,Update,SetParentSize,Start)
                 Text = Computed(function()
                     return vText:get()
                 end);
-                TextColor3 = vColor;
+                TextColor3 = Computed(function()
+                    return vColor:get()
+                end);
                 TextSize = 20;
                 TextEditable = false;
                 ClearTextOnFocus = false;
@@ -306,9 +326,9 @@ local function TableUi(i,v,Tab,Update,SetParentSize,Start)
                         VerticalAlignment = Enum.VerticalAlignment.Top;
                     };
                     List = Fusion.ForPairs(v,function(ind,val)
-                        local Ui
+                        local ReturnUi
                         if typeof(val) == "table" then
-                            Ui = TableUi(ind,val,Tab+1,function(NewValue)
+                            local NewUi,f = TableUi(ind,val,Tab+1,function(NewValue)
                                 -- Update Value
                                 if v == nil then
                                     v = {}
@@ -321,9 +341,13 @@ local function TableUi(i,v,Tab,Update,SetParentSize,Start)
                                 -- Update Size
                                 ChildrenSize:set(ChildrenSize:get() + Size)
                                 SetParentSize(Size)
-                            end)
+                            end,false)
+                            if typeof(f) == "function" then
+                                table.insert(Dels,f)
+                            end
+                            ReturnUi = NewUi
                         else
-                            Ui = StringUi(ind,val,Tab+1,function(NewValue)
+                            local NewUi,f = StringUi(ind,val,Tab+1,function(NewValue)
                                 -- Update Value
                                 if v == nil then
                                     v = {}
@@ -332,9 +356,13 @@ local function TableUi(i,v,Tab,Update,SetParentSize,Start)
                                 end
                                 v[ind] = NewValue
                                 Update(v)
-                            end)
+                            end,false)
+                            if typeof(f) == "function" then
+                                table.insert(Dels,f)
+                            end
+                            ReturnUi = NewUi
                         end
-                        return ind, Ui
+                        return ind, ReturnUi
                     end,function() end)
                 }
             };
@@ -360,6 +388,9 @@ local function TableUi(i,v,Tab,Update,SetParentSize,Start)
                     v = nil
                     DelFrameVis:set(true)
                     Update(nil)
+                    for _,f in pairs(Dels) do
+                        f()
+                    end
                 end
             };
             --Add = New "ImageButton" {
@@ -380,6 +411,21 @@ local function TableUi(i,v,Tab,Update,SetParentSize,Start)
             --};
         }
     }
+
+    return Ui,function()
+        for _,f in pairs(Dels) do
+            f()
+        end
+
+        vText:set("nil")
+        -- Update Value
+        v = nil
+        DelFrameVis:set(true)
+        if Config.ValueColors[typeof(nil)] then
+            vColor:set(Config.ValueColors[typeof(nil)])
+        end
+        return
+    end
 end
 
 function Module.MainUi()
@@ -635,12 +681,16 @@ function Module.MainUi()
                                     end,function(Size: number)
                                         -- Update Size
                                         ScrollSize:set( ScrollSize:get() + Size )
-                                    end,true)
+                                    end,true,function(f)
+                                        
+                                    end)
                                 else
                                     Ui = StringUi(i,v,0,function(NewValue)
                                         -- Update Value
                                         State:UpdateKey(NewValue)
-                                    end,true)
+                                    end,true,function(f)
+                                        
+                                    end)
                                 end
                                 ScrollSize:set(25)
                                 return i, Ui

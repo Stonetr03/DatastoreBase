@@ -50,6 +50,7 @@ local function StringUi(i,v,Tab,Update,Start) -- i,v, Tab Spacing, Update Functi
     end
 
     local BgTransparency = Value(1)
+    local DelFrameVis = Value(false)
 
     local Text = Value(tostring(v))
     local TextRef = Value()
@@ -62,6 +63,15 @@ local function StringUi(i,v,Tab,Update,Start) -- i,v, Tab Spacing, Update Functi
         Size = UDim2.new(1,0,0,25);
         Name = i;
         [Children] = {
+            DelFrame = New "Frame" {
+                Size = UDim2.new(1,0,0,25);
+                BackgroundColor3 = Color3.new(0,0,0);
+                BackgroundTransparency = 0.4;
+                ZIndex = 5;
+                Visible = Computed(function()
+                    return DelFrameVis:get()
+                end)
+            };
             BG = New "Frame" {
                 Size = UDim2.new(1,0,0,25);
                 ZIndex = -1;
@@ -111,6 +121,7 @@ local function StringUi(i,v,Tab,Update,Start) -- i,v, Tab Spacing, Update Functi
                         NewValue = false;
                     elseif NewText == "nil" then
                         NewValue = nil
+                        DelFrameVis:set(true)
                     elseif tonumber(NewText) ~= nil then
                         NewValue = tonumber(NewText)
                     else
@@ -158,6 +169,7 @@ local function StringUi(i,v,Tab,Update,Start) -- i,v, Tab Spacing, Update Functi
                     Text:set(NewText)
                     -- Update Value
                     v = nil
+                    DelFrameVis:set(true)
                     Update(nil)
                 end
             };
@@ -187,6 +199,7 @@ local function TableUi(i,v,Tab,Update,SetParentSize,Start)
 
     local BgTransparency = Value(1)
     local Open = Value(false)
+    local DelFrameVis = Value(false)
 
     local ChildrenSize = Value(0)
 
@@ -201,6 +214,15 @@ local function TableUi(i,v,Tab,Update,SetParentSize,Start)
         end);
         Name = i;
         [Children] = {
+            DelFrame = New "Frame" {
+                Size = UDim2.new(1,0,0,25);
+                BackgroundColor3 = Color3.new(0,0,0);
+                BackgroundTransparency = 0.4;
+                ZIndex = 5;
+                Visible = Computed(function()
+                    return DelFrameVis:get()
+                end)
+            };
             BG = New "Frame" {
                 Size = UDim2.new(1,0,0,25);
                 ZIndex = -1;
@@ -288,6 +310,11 @@ local function TableUi(i,v,Tab,Update,SetParentSize,Start)
                         if typeof(val) == "table" then
                             Ui = TableUi(ind,val,Tab+1,function(NewValue)
                                 -- Update Value
+                                if v == nil then
+                                    v = {}
+                                    DelFrameVis:set(false)
+                                    vText:set("table: ...")
+                                end
                                 v[ind] = NewValue
                                 Update(v)
                             end,function(Size: number)
@@ -298,6 +325,11 @@ local function TableUi(i,v,Tab,Update,SetParentSize,Start)
                         else
                             Ui = StringUi(ind,val,Tab+1,function(NewValue)
                                 -- Update Value
+                                if v == nil then
+                                    v = {}
+                                    DelFrameVis:set(false)
+                                    vText:set("table: ...")
+                                end
                                 v[ind] = NewValue
                                 Update(v)
                             end)
@@ -326,6 +358,7 @@ local function TableUi(i,v,Tab,Update,SetParentSize,Start)
                     vText:set(NewText)
                     -- Update Value
                     v = nil
+                    DelFrameVis:set(true)
                     Update(nil)
                 end
             };
@@ -549,8 +582,15 @@ function Module.MainUi()
                                 Position = UDim2.new(1,-40,0,5);
                                 Size = UDim2.new(0,30,0,30);
                                 Image = "rbxassetid://11419703493";
+                                ImageColor3 = Computed(function()
+                                    if State.SaveVis:get() == true then
+                                        return Color3.new(1,1,1);
+                                    else
+                                        return Color3.fromRGB(129, 129, 129)
+                                    end
+                                end);
                                 [Event "MouseButton1Up"] = function()
-                                    print("Click")
+                                    State:SaveKey()
                                 end
                             };
                             Reload = New "ImageButton" {
@@ -606,7 +646,32 @@ function Module.MainUi()
                                 return i, Ui
                             end,function() end)
                         }
-                    }
+                    };
+                    Blackout = New "TextLabel" {
+                        BackgroundTransparency = 0;
+                        BackgroundColor3 = Color3.new(0,0,0);
+                        Position = UDim2.new(0,0,0,40);
+                        Size = UDim2.new(1,0,1,-40);
+                        Text = Computed(function()
+                            return "No Data Found"
+                        end);
+                        TextColor3 = Color3.new(1,1,1);
+                        TextSize = 20;
+                        TextWrapped = true;
+                        TextXAlignment = Enum.TextXAlignment.Left;
+                        TextYAlignment = Enum.TextYAlignment.Top;
+                        Visible = Computed(function()
+                            return State.BlackoutVis:get()
+                        end);
+                        ZIndex = 5;
+                        [Children] = {
+                            New "UIPadding" {
+                                PaddingLeft = UDim.new(0,5);
+                                PaddingRight = UDim.new(0,5);
+                            }
+                        }
+                    };
+
                 }
             };
         }

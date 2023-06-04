@@ -3,6 +3,9 @@
 local DataStoreService = game:GetService("DataStoreService")
 local DataStore
 
+-- WARNING: This Code is for Testing Only and should NOT be used in a Live environment.
+-- For use in a Live Environment, its recommended to use pcalls and Checks
+
 game.ReplicatedStorage.Comm.OnServerInvoke = function(p,Req,Name,Value)
     if Req == "Get" then
         return true
@@ -18,6 +21,7 @@ game.ReplicatedStorage.Comm.OnServerInvoke = function(p,Req,Name,Value)
         --DataStore = nil
         return true
     elseif Req == "Key" then
+        --return DataStore:GetAsync(Name)
         return {
             Inventory = {
                 [1] = {1,2};
@@ -33,5 +37,12 @@ game.ReplicatedStorage.Comm.OnServerInvoke = function(p,Req,Name,Value)
             Points = 100;
             Enabled = true;
         }
+    elseif Req == "Save" then
+        print("Save",Name)
+        print(Value)
+        --DataStore:SetAsync(Name,Value)
+    elseif Req == "Remove" then
+        -- Delete Kye
+        --DataStore:RemoveAsync(Name)
     end
 end

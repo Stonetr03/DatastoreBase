@@ -8,7 +8,6 @@ Customizaton Settings can be found in `Config.lua`
 Coming Soon
 
 ## Missing Features
-- Deleting Indexs in Tables
 - Add Keys/Values to Table
 - Ordered Datastores
 

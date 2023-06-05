@@ -5,7 +5,7 @@ To Use Datastore Base add in a custom `init.client.lua` and `Datastore.lua` file
 Customizaton Settings can be found in `Config.lua`
 
 ## Official Builds
-Coming Soon
+**Roblox Plugin**: [Datastore Plugin](https://github.com/Stonetr03/DatastorePlugin)
 
 ## Missing Features
 - Add Keys/Values to Table

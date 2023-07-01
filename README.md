@@ -10,7 +10,6 @@ Customizaton Settings can be found in `Config.lua`
 ## Missing Features
 - Add Keys/Values to Table
 - Ordered Datastores
-- Data Saving Ui after clicking save button
 
 ## Build Info
 

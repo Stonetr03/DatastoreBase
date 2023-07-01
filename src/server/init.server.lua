@@ -40,9 +40,11 @@ game.ReplicatedStorage.Comm.OnServerInvoke = function(p,Req,Name,Value)
     elseif Req == "Save" then
         print("Save",Name)
         print(Value)
+        return true
         --DataStore:SetAsync(Name,Value)
     elseif Req == "Remove" then
         -- Delete Key
+        return true
         --DataStore:RemoveAsync(Name)
     end
 end

@@ -17,10 +17,14 @@ local Module = {}
 local NameInput = Value();
 local ScopeInput = Value();
 local KeyInput = Value();
+local InsertInput = Value();
 
 local MenuOpen = Value(1)
 local ErrorTxt = Value(0)
 local ScrollSize = Value(0)
+
+local InsertFunc
+local InsertVis = Value(0)
 
 local function CountTable(t)
     if typeof(t) ~= "table" then
@@ -31,6 +35,37 @@ local function CountTable(t)
         c+=1
     end
     return c
+end
+local function TableType(t: table)
+    local array = true
+    local dict = true
+
+    -- Check if table is array
+    for i,_ in pairs(t) do
+        if type(i) ~= "number" or math.floor(i) ~= i then
+            array = false
+            break
+        end
+    end
+
+    -- Check if table is dictionary
+    for i,_ in pairs(t) do
+        if type(i) ~= "string" then
+            dict = false
+            break
+        end
+    end
+
+    -- table type
+    if array and dict then
+        return 3 -- Empty Table
+    elseif array then
+        return 1 -- Array
+    elseif dict then
+        return 2 -- Dict
+    else
+        return 2 -- Mixed Table
+    end
 end
 
 -- Ui
@@ -124,6 +159,8 @@ local function StringUi(i,v,Tab,Update,Start) -- i,v, Tab Spacing, Update Functi
                         DelFrameVis:set(true)
                     elseif tonumber(NewText) ~= nil then
                         NewValue = tonumber(NewText)
+                    elseif NewText == "{}" then
+                        NewValue = {}
                     else
                         -- String
                         if string.sub(NewText,1,1) == '"' and string.sub(NewText,string.len(NewText)) == '"' then
@@ -145,7 +182,7 @@ local function StringUi(i,v,Tab,Update,Start) -- i,v, Tab Spacing, Update Functi
                     -- Update Value
                     if v ~= NewValue then
                         v = NewValue
-                        Update(NewValue)
+                        Update(i,NewValue)
                     end
                     if v ~= nil then
                         DelFrameVis:set(false)
@@ -207,6 +244,7 @@ local function TableUi(i,v,Tab,Update,SetParentSize,Start)
         vColor:set(Config.ValueColors[typeof(v)])
     end
 
+    local RenderingValues = Value(v)
     local Count = CountTable(v)
 
     local vText = Value("table: ...")
@@ -315,9 +353,7 @@ local function TableUi(i,v,Tab,Update,SetParentSize,Start)
                 BackgroundTransparency = 1;
                 Position = UDim2.new(0,0,0,25);
                 Size = UDim2.new(1,0,1,-25);
-                Visible = Computed(function()
-                    return Open:get()
-                end);
+                Visible = Open;
                 [Children] = {
                     UIListLayout = New "UIListLayout" {
                         FillDirection = Enum.FillDirection.Vertical;
@@ -325,10 +361,10 @@ local function TableUi(i,v,Tab,Update,SetParentSize,Start)
                         SortOrder = Enum.SortOrder.Name;
                         VerticalAlignment = Enum.VerticalAlignment.Top;
                     };
-                    List = Fusion.ForPairs(v,function(ind,val)
+                    List = Fusion.ForPairs(RenderingValues,function(ind,val)
                         local ReturnUi
                         if typeof(val) == "table" then
-                            local NewUi,f = TableUi(ind,val,Tab+1,function(NewValue)
+                            local NewUi,f = TableUi(ind,val,Tab+1,function(NewIndex,NewValue)
                                 -- Update Value
                                 if v == nil then
                                     v = {}
@@ -336,7 +372,7 @@ local function TableUi(i,v,Tab,Update,SetParentSize,Start)
                                     vText:set("table: ...")
                                 end
                                 v[ind] = NewValue
-                                Update(v)
+                                Update(i,v)
                             end,function(Size: number)
                                 -- Update Size
                                 ChildrenSize:set(ChildrenSize:get() + Size)
@@ -347,7 +383,7 @@ local function TableUi(i,v,Tab,Update,SetParentSize,Start)
                             end
                             ReturnUi = NewUi
                         else
-                            local NewUi,f = StringUi(ind,val,Tab+1,function(NewValue)
+                            local NewUi,f = StringUi(ind,val,Tab+1,function(NewIndex,NewValue)
                                 -- Update Value
                                 if v == nil then
                                     v = {}
@@ -355,7 +391,10 @@ local function TableUi(i,v,Tab,Update,SetParentSize,Start)
                                     vText:set("table: ...")
                                 end
                                 v[ind] = NewValue
-                                Update(v)
+                                Update(i,v)
+                                if typeof(NewValue) == "table" then
+                                    RenderingValues:set(v)
+                                end
                             end,false)
                             if typeof(f) == "function" then
                                 table.insert(Dels,f)
@@ -393,22 +432,92 @@ local function TableUi(i,v,Tab,Update,SetParentSize,Start)
                     end
                 end
             };
-            --Add = New "ImageButton" {
-            --    BackgroundColor3 = Color3.new(0,0,0);
-            --    BackgroundTransparency = 0.85;
-            --    AnchorPoint = Vector2.new(1,0);
-            --    Position = UDim2.new(1,-30,0,0);
-            --    Size = UDim2.new(0,25,0,25);
-            --    Image = "rbxassetid://11295291707";
-            --    ZIndex = 2;
-            --    Visible = Computed(function()
-            --        if BgTransparency:get() == 1 then
-            --            return false
-            --        else
-            --            return true
-            --       end
-            --    end)
-            --};
+            Add = New "ImageButton" {
+                BackgroundColor3 = Color3.new(0,0,0);
+                BackgroundTransparency = 0.85;
+                AnchorPoint = Vector2.new(1,0);
+                Position = UDim2.new(1,-30,0,0);
+                Size = UDim2.new(0,25,0,25);
+                Image = "rbxassetid://11295291707";
+                ZIndex = 2;
+                Visible = Computed(function()
+                    if BgTransparency:get() == 1 then
+                        return false
+                    else
+                        return true
+                   end
+                end);
+                [Event "MouseButton1Up"] = function()
+                    InsertFunc = function(t: number,index: string) -- 0:cancel, 1:first, 2:last, 3:custom;index
+                        if t == 0 then
+                            return
+                        elseif t == 1 then
+                            Count+=1
+                            if Open:get() == true then
+                                SetParentSize(25)
+                                Open:set(false)
+                                Open:set(true)
+                            end
+                            if v == nil then
+                                v = {}
+                                DelFrameVis:set(false)
+                            end
+                            vText:set("table: ...")
+                            if #v > 0 then
+                                -- Bump all
+                                local newTab = {}
+                                for j,k in pairs(v) do
+                                    if typeof(j) == "number" then
+                                        newTab[j+1] = k
+                                    else
+                                        newTab[j] = k
+                                    end
+                                end
+                                v = newTab
+                            end
+                            v[1] = "value"
+                            Update(i,v)
+                        elseif t == 2 then
+                            Count+=1
+                            if Open:get() == true then
+                                SetParentSize(25)
+                                Open:set(false)
+                                Open:set(true)
+                            end
+                            if v == nil then
+                                v = {}
+                                DelFrameVis:set(false)
+                            end
+                            vText:set("table: ...")
+                            -- Get Max Value
+                            local max = 0
+                            for j,_ in pairs(v) do
+                                if typeof(j) == "number" and j > max then
+                                    max = j
+                                end
+                            end
+                            v[max+1] = "value"
+                            Update(i,v)
+                        elseif t == 3 then
+                            Count+=1
+                            if Open:get() == true then
+                                SetParentSize(25)
+                                Open:set(false)
+                                Open:set(true)
+                            end
+                            if v == nil then
+                                v = {}
+                                DelFrameVis:set(false)
+                            end
+                            vText:set("table: ...")
+                            v[index] = "value"
+                            Update(i,v)
+                        end
+                        RenderingValues:set(v)
+                    end
+                    InsertVis:set(TableType(v))
+                end
+            };
         }
     }
 
@@ -702,21 +811,21 @@ function Module.MainUi()
                             List = Fusion.ForPairs(State.CurrentData,function(i,v)
                                 local Ui
                                 if typeof(v) == "table" then
-                                    Ui = TableUi(i,v,0,function(NewValue)
+                                    Ui = TableUi(i,v,0,function(NewIndex,NewValue)
                                         -- Update Value
                                         State:UpdateKey(NewValue)
                                     end,function(Size: number)
                                         -- Update Size
                                         ScrollSize:set( ScrollSize:get() + Size )
                                     end,true,function(f)
-                                        
+
                                     end)
                                 else
-                                    Ui = StringUi(i,v,0,function(NewValue)
+                                    Ui = StringUi(i,v,0,function(NewIndex,NewValue)
                                         -- Update Value
                                         State:UpdateKey(NewValue)
                                     end,true,function(f)
-                                        
+
                                     end)
                                 end
                                 ScrollSize:set(25)
@@ -748,7 +857,144 @@ function Module.MainUi()
                             }
                         }
                     };
+                    Insert = New "TextButton" {
+                        AutoButtonColor = false;
+                        BackgroundColor3 = Color3.new(0,0,0);
+                        BackgroundTransparency = 0.7;
+                        Size = UDim2.new(1,0,1,0);
+                        Text = "";
+                        ZIndex = 5;
+                        Visible = Computed(function()
+                            if InsertVis:get() == 0 then
+                                return false
+                            end
+                            return true
+                        end);
+                        [Event "MouseButton1Up"] = function()
+                            -- Cancel
+                            if typeof(InsertFunc) == "function" then
+                                InsertFunc(0)
+                            end
+                            InsertVis:set(0)
+                            InsertFunc = nil
+                        end;
 
+                        [Children] = {
+                            New "Frame" {
+                                AnchorPoint = Vector2.new(0.5,0.5);
+                                BackgroundTransparency = 1;
+                                Position = UDim2.new(0.5,0,0.5,0);
+                                Size = UDim2.new(0.2,0,0,65);
+
+                                [Children] = {
+                                    New "UIListLayout" {
+                                        Padding = UDim.new(0,5);
+                                        SortOrder = Enum.SortOrder.LayoutOrder;
+                                        VerticalAlignment = Enum.VerticalAlignment.Center;
+                                    };
+                                    New "UISizeConstraint" {
+                                        MinSize = Vector2.new(150,0);
+                                    };
+                                    -- Insert First
+                                    New "TextButton" {
+                                        BackgroundColor3 = Color3.new(1,1,1);
+                                        BackgroundTransparency = 0.9;
+                                        Font = Enum.Font.SourceSans;
+                                        LayoutOrder = 1;
+                                        Size = UDim2.new(1,0,0,30);
+                                        Text = "Insert First";
+                                        TextColor3 = Color3.new(1,1,1);
+                                        TextSize = 20;
+                                        TextWrapped = false;
+                                        [Event "MouseButton1Up"] = function()
+                                            -- Insert
+                                            if typeof(InsertFunc) == "function" then
+                                                InsertFunc(1)
+                                            end
+                                            InsertVis:set(0)
+                                            InsertFunc = nil
+                                        end;
+                                        Visible = Computed(function()
+                                            if InsertVis:get() == 1 or InsertVis:get() == 3 then
+                                                return true
+                                            end
+                                            return false
+                                        end);
+                                    };
+                                    -- Insert Last
+                                    New "TextButton" {
+                                        BackgroundColor3 = Color3.new(1,1,1);
+                                        BackgroundTransparency = 0.9;
+                                        Font = Enum.Font.SourceSans;
+                                        LayoutOrder = 2;
+                                        Size = UDim2.new(1,0,0,30);
+                                        Text = "Insert Last";
+                                        TextColor3 = Color3.new(1,1,1);
+                                        TextSize = 20;
+                                        TextWrapped = false;
+                                        [Event "MouseButton1Up"] = function()
+                                            -- Insert
+                                            if typeof(InsertFunc) == "function" then
+                                                InsertFunc(2)
+                                            end
+                                            InsertVis:set(0)
+                                            InsertFunc = nil
+                                        end;
+                                        Visible = Computed(function()
+                                            if InsertVis:get() == 1 or InsertVis:get() == 3 then
+                                                return true
+                                            end
+                                            return false
+                                        end);
+                                    };
+                                    -- Index
+                                    Key = New "TextBox" {
+                                        BackgroundTransparency = 0.9;
+                                        BackgroundColor3 = Color3.new(1,1,1);
+                                        ClearTextOnFocus = false;
+                                        Size = UDim2.new(1,0,0,30);
+                                        TextEditable = true;
+                                        PlaceholderText = "Index";
+                                        Text = "";
+                                        PlaceholderColor3 = Color3.fromRGB(209,209,209);
+                                        TextColor3 = Color3.new(1,1,1);
+                                        TextSize = 20;
+                                        TextXAlignment = Enum.TextXAlignment.Center;
+                                        LayoutOrder = 3;
+                                        [Ref] = InsertInput;
+                                        [Event "FocusLost"] = function()
+                                            -- Set Index
+                                            if typeof(InsertFunc) == "function" then
+                                                InsertFunc(3,InsertInput:get().Text)
+                                                InsertInput:get().Text = ""
+                                            end
+                                            InsertVis:set(0)
+                                            InsertFunc = nil
+                                        end;
+                                        [Children] = {
+                                            New "UIPadding" {
+                                                PaddingLeft = UDim.new(0,5);
+                                                PaddingRight = UDim.new(0,5);
+                                            };
+                                            New "UIStroke" {
+                                                ApplyStrokeMode = Enum.ApplyStrokeMode.Border;
+                                                Color = Color3.new(1,1,1);
+                                                Transparency = 0.8;
+                                                Thickness = 1;
+                                            }
+                                        };
+                                        Visible = Computed(function()
+                                            if InsertVis:get() == 2 or InsertVis:get() == 3 then
+                                                return true
+                                            end
+                                            return false
+                                        end);
+                                    };
+
+                                }
+                            }
+                        }
+                    }
                 }
             };
         }

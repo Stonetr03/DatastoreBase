@@ -40,6 +40,10 @@ local function TableType(t: table)
     local array = true
     local dict = true
 
+    if t == nil then
+        t = {}
+    end
+
     -- Check if table is array
     for i,_ in pairs(t) do
         if type(i) ~= "number" or math.floor(i) ~= i then
@@ -109,7 +113,7 @@ local function StringUi(i,v,Tab,Update,Start) -- i,v, Tab Spacing, Update Functi
             };
             BG = New "Frame" {
                 Size = UDim2.new(1,0,0,25);
-                ZIndex = -1;
+                ZIndex = 2;
                 [Event "MouseEnter"] = function()
                     BgTransparency:set(0.9);
                 end;
@@ -130,6 +134,7 @@ local function StringUi(i,v,Tab,Update,Start) -- i,v, Tab Spacing, Update Functi
                 TextEditable = false;
                 ClearTextOnFocus = false;
                 TextXAlignment = Enum.TextXAlignment.Left;
+                ZIndex = 3;
             };
             Value = New "TextBox" {
                 BackgroundTransparency = 1;
@@ -145,6 +150,7 @@ local function StringUi(i,v,Tab,Update,Start) -- i,v, Tab Spacing, Update Functi
                 TextEditable = true;
                 ClearTextOnFocus = false;
                 TextXAlignment = Enum.TextXAlignment.Left;
+                ZIndex = 3;
                 -- Edit Functions
                 [Ref] = TextRef;
                 [Event "FocusLost"] = function()
@@ -182,7 +188,7 @@ local function StringUi(i,v,Tab,Update,Start) -- i,v, Tab Spacing, Update Functi
                     -- Update Value
                     if v ~= NewValue then
                         v = NewValue
-                        Update(i,NewValue)
+                        Update(NewValue)
                     end
                     if v ~= nil then
                         DelFrameVis:set(false)
@@ -196,7 +202,7 @@ local function StringUi(i,v,Tab,Update,Start) -- i,v, Tab Spacing, Update Functi
                 Position = UDim2.new(1,-5,0,0);
                 Size = UDim2.new(0,25,0,25);
                 Image = "rbxassetid://11293981586";
-                ZIndex = 2;
+                ZIndex = 4;
                 Visible = Computed(function()
                     if BgTransparency:get() == 1 then
                         return false
@@ -281,7 +287,7 @@ local function TableUi(i,v,Tab,Update,SetParentSize,Start)
             };
             BG = New "Frame" {
                 Size = UDim2.new(1,0,0,25);
-                ZIndex = -1;
+                ZIndex = 2;
                 [Event "MouseEnter"] = function()
                     BgTransparency:set(0.9);
                 end;
@@ -302,6 +308,7 @@ local function TableUi(i,v,Tab,Update,SetParentSize,Start)
                 TextEditable = false;
                 ClearTextOnFocus = false;
                 TextXAlignment = Enum.TextXAlignment.Left;
+                ZIndex = 3;
             };
             Value = New "TextBox" {
                 BackgroundTransparency = 1;
@@ -318,7 +325,7 @@ local function TableUi(i,v,Tab,Update,SetParentSize,Start)
                 ClearTextOnFocus = false;
                 TextXAlignment = Enum.TextXAlignment.Left;
                 -- Tables Not Editable.
-
+                ZIndex = 3;
             };
             Dropdown = New "ImageButton" {
                 BackgroundTransparency = 1;
@@ -342,12 +349,14 @@ local function TableUi(i,v,Tab,Update,SetParentSize,Start)
                     end
 
                 end;
+                ZIndex = 3;
             };
             Line = New "Frame" {
                 BackgroundTransparency = 0;
                 BackgroundColor3 = Color3.fromRGB(46,46,46);
                 Position = UDim2.new(0,11 + (Tab * Config.Spacing),0,25);
                 Size = UDim2.new(0,2,1,-25);
+                ZIndex = 3;
             };
             Container = New "Frame" {
                 BackgroundTransparency = 1;
@@ -364,7 +373,7 @@ local function TableUi(i,v,Tab,Update,SetParentSize,Start)
                     List = Fusion.ForPairs(RenderingValues,function(ind,val)
                         local ReturnUi
                         if typeof(val) == "table" then
-                            local NewUi,f = TableUi(ind,val,Tab+1,function(NewIndex,NewValue)
+                            local NewUi,f = TableUi(ind,val,Tab+1,function(NewValue)
                                 -- Update Value
                                 if v == nil then
                                     v = {}
@@ -372,7 +381,7 @@ local function TableUi(i,v,Tab,Update,SetParentSize,Start)
                                     vText:set("table: ...")
                                 end
                                 v[ind] = NewValue
-                                Update(i,v)
+                                Update(v)
                             end,function(Size: number)
                                 -- Update Size
                                 ChildrenSize:set(ChildrenSize:get() + Size)
@@ -383,7 +392,7 @@ local function TableUi(i,v,Tab,Update,SetParentSize,Start)
                             end
                             ReturnUi = NewUi
                         else
-                            local NewUi,f = StringUi(ind,val,Tab+1,function(NewIndex,NewValue)
+                            local NewUi,f = StringUi(ind,val,Tab+1,function(NewValue)
                                 -- Update Value
                                 if v == nil then
                                     v = {}
@@ -391,7 +400,7 @@ local function TableUi(i,v,Tab,Update,SetParentSize,Start)
                                     vText:set("table: ...")
                                 end
                                 v[ind] = NewValue
-                                Update(i,v)
+                                Update(v)
                                 if typeof(NewValue) == "table" then
                                     RenderingValues:set(v)
                                 end
@@ -412,7 +421,7 @@ local function TableUi(i,v,Tab,Update,SetParentSize,Start)
                 Position = UDim2.new(1,-5,0,0);
                 Size = UDim2.new(0,25,0,25);
                 Image = "rbxassetid://11293981586";
-                ZIndex = 2;
+                ZIndex = 4;
                 Visible = Computed(function()
                     if BgTransparency:get() == 1 then
                         return false
@@ -430,7 +439,7 @@ local function TableUi(i,v,Tab,Update,SetParentSize,Start)
                     for _,f in pairs(Dels) do
                         f()
                     end
-                end
+                end;
             };
             Add = New "ImageButton" {
                 BackgroundColor3 = Color3.new(0,0,0);
@@ -439,7 +448,7 @@ local function TableUi(i,v,Tab,Update,SetParentSize,Start)
                 Position = UDim2.new(1,-30,0,0);
                 Size = UDim2.new(0,25,0,25);
                 Image = "rbxassetid://11295291707";
-                ZIndex = 2;
+                ZIndex = 4;
                 Visible = Computed(function()
                     if BgTransparency:get() == 1 then
                         return false
@@ -476,7 +485,7 @@ local function TableUi(i,v,Tab,Update,SetParentSize,Start)
                                 v = newTab
                             end
                             v[1] = "value"
-                            Update(i,v)
+                            Update(v)
                         elseif t == 2 then
                             Count+=1
                             if Open:get() == true then
@@ -497,8 +506,11 @@ local function TableUi(i,v,Tab,Update,SetParentSize,Start)
                                 end
                             end
                             v[max+1] = "value"
-                            Update(i,v)
+                            Update(v)
                         elseif t == 3 then
+                            if v[index] ~= nil then
+                                return
+                            end
                             Count+=1
                             if Open:get() == true then
                                 SetParentSize(25)
@@ -511,7 +523,7 @@ local function TableUi(i,v,Tab,Update,SetParentSize,Start)
                             end
                             vText:set("table: ...")
                             v[index] = "value"
-                            Update(i,v)
+                            Update(v)
                         end
                         RenderingValues:set(v)
                     end
@@ -811,7 +823,7 @@ function Module.MainUi()
                             List = Fusion.ForPairs(State.CurrentData,function(i,v)
                                 local Ui
                                 if typeof(v) == "table" then
-                                    Ui = TableUi(i,v,0,function(NewIndex,NewValue)
+                                    Ui = TableUi(i,v,0,function(NewValue)
                                         -- Update Value
                                         State:UpdateKey(NewValue)
                                     end,function(Size: number)
@@ -821,7 +833,7 @@ function Module.MainUi()
 
                                     end)
                                 else
-                                    Ui = StringUi(i,v,0,function(NewIndex,NewValue)
+                                    Ui = StringUi(i,v,0,function(NewValue)
                                         -- Update Value
                                         State:UpdateKey(NewValue)
                                     end,true,function(f)
@@ -849,7 +861,7 @@ function Module.MainUi()
                         Visible = Computed(function()
                             return State.BlackoutVis:get()
                         end);
-                        ZIndex = 5;
+                        ZIndex = 8;
                         [Children] = {
                             New "UIPadding" {
                                 PaddingLeft = UDim.new(0,5);
@@ -863,7 +875,7 @@ function Module.MainUi()
                         BackgroundTransparency = 0.7;
                         Size = UDim2.new(1,0,1,0);
                         Text = "";
-                        ZIndex = 5;
+                        ZIndex = 6;
                         Visible = Computed(function()
                             if InsertVis:get() == 0 then
                                 return false
@@ -897,8 +909,7 @@ function Module.MainUi()
                                     };
                                     -- Insert First
                                     New "TextButton" {
-                                        BackgroundColor3 = Color3.new(1,1,1);
-                                        BackgroundTransparency = 0.9;
+                                        BackgroundColor3 = Color3.fromRGB(25,25,25);
                                         Font = Enum.Font.SourceSans;
                                         LayoutOrder = 1;
                                         Size = UDim2.new(1,0,0,30);
@@ -906,6 +917,7 @@ function Module.MainUi()
                                         TextColor3 = Color3.new(1,1,1);
                                         TextSize = 20;
                                         TextWrapped = false;
+                                        ZIndex = 7;
                                         [Event "MouseButton1Up"] = function()
                                             -- Insert
                                             if typeof(InsertFunc) == "function" then
@@ -923,8 +935,7 @@ function Module.MainUi()
                                     };
                                     -- Insert Last
                                     New "TextButton" {
-                                        BackgroundColor3 = Color3.new(1,1,1);
-                                        BackgroundTransparency = 0.9;
+                                        BackgroundColor3 = Color3.fromRGB(25,25,25);
                                         Font = Enum.Font.SourceSans;
                                         LayoutOrder = 2;
                                         Size = UDim2.new(1,0,0,30);
@@ -932,6 +943,7 @@ function Module.MainUi()
                                         TextColor3 = Color3.new(1,1,1);
                                         TextSize = 20;
                                         TextWrapped = false;
+                                        ZIndex = 7;
                                         [Event "MouseButton1Up"] = function()
                                             -- Insert
                                             if typeof(InsertFunc) == "function" then
@@ -949,8 +961,7 @@ function Module.MainUi()
                                     };
                                     -- Index
                                     Key = New "TextBox" {
-                                        BackgroundTransparency = 0.9;
-                                        BackgroundColor3 = Color3.new(1,1,1);
+                                        BackgroundColor3 = Color3.fromRGB(25,25,25);
                                         ClearTextOnFocus = false;
                                         Size = UDim2.new(1,0,0,30);
                                         TextEditable = true;
@@ -961,10 +972,11 @@ function Module.MainUi()
                                         TextSize = 20;
                                         TextXAlignment = Enum.TextXAlignment.Center;
                                         LayoutOrder = 3;
+                                        ZIndex = 7;
                                         [Ref] = InsertInput;
                                         [Event "FocusLost"] = function()
                                             -- Set Index
-                                            if typeof(InsertFunc) == "function" then
+                                            if typeof(InsertFunc) == "function" and InsertInput:get().Text ~= "" then
                                                 InsertFunc(3,InsertInput:get().Text)
                                                 InsertInput:get().Text = ""
                                             end

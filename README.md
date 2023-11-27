@@ -8,7 +8,6 @@ Customizaton Settings can be found in `Config.lua`
 **Roblox Plugin**: [Datastore Plugin](https://github.com/Stonetr03/DatastorePlugin)
 
 ## Missing Features
-- Add Keys/Values to Table
 - Ordered Datastores
 
 ## Build Info

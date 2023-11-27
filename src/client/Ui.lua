@@ -977,7 +977,18 @@ function Module.MainUi()
                                         [Event "FocusLost"] = function()
                                             -- Set Index
                                             if typeof(InsertFunc) == "function" and InsertInput:get().Text ~= "" then
-                                                InsertFunc(3,InsertInput:get().Text)
+                                                local txt = InsertInput:get().Text
+                                                if InsertVis:get() == 1 then
+                                                    if tonumber(txt) == nil or tonumber(txt) <= 0 then
+                                                        InsertInput:get().Text = ""
+                                                        InsertVis:set(0)
+                                                        InsertFunc = nil
+                                                        return
+                                                    else
+                                                        txt = tonumber(txt)
+                                                    end
+                                                end
+                                                InsertFunc(3,txt)
                                                 InsertInput:get().Text = ""
                                             end
                                             InsertVis:set(0)
@@ -996,7 +1007,7 @@ function Module.MainUi()
                                             }
                                         };
                                         Visible = Computed(function()
-                                            if InsertVis:get() == 2 or InsertVis:get() == 3 then
+                                            if InsertVis:get() == 2 or InsertVis:get() == 3 or InsertVis:get() == 1 then
                                                 return true
                                             end
                                             return false

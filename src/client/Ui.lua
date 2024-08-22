@@ -101,6 +101,7 @@ local function StringUi(i,v,Tab,Update,Start) -- i,v, Tab Spacing, Update Functi
         BackgroundTransparency = 1;
         Size = UDim2.new(1,0,0,25);
         Name = i;
+        LayoutOrder = tonumber(i) or 1;
         [Children] = {
             DelFrame = New "Frame" {
                 Size = UDim2.new(1,0,0,25);
@@ -258,6 +259,8 @@ local function TableUi(i,v,Tab,Update,SetParentSize,Start)
         vText:set("table: {}")
     end
 
+    local isArray = Value(TableType(v) == 1)
+
     local BgTransparency = Value(1)
     local Open = Value(false)
     local DelFrameVis = Value(false)
@@ -275,6 +278,7 @@ local function TableUi(i,v,Tab,Update,SetParentSize,Start)
             end
         end);
         Name = i;
+        LayoutOrder = tonumber(i) or 1;
         [Children] = {
             DelFrame = New "Frame" {
                 Size = UDim2.new(1,0,0,25);
@@ -367,7 +371,9 @@ local function TableUi(i,v,Tab,Update,SetParentSize,Start)
                     UIListLayout = New "UIListLayout" {
                         FillDirection = Enum.FillDirection.Vertical;
                         HorizontalAlignment = Enum.HorizontalAlignment.Left;
-                        SortOrder = Enum.SortOrder.Name;
+                        SortOrder = Computed(function()
+                            return isArray:get() and Enum.SortOrder.LayoutOrder or Enum.SortOrder.Name;
+                        end);
                         VerticalAlignment = Enum.VerticalAlignment.Top;
                     };
                     List = Fusion.ForPairs(RenderingValues,function(ind,val)
@@ -382,6 +388,7 @@ local function TableUi(i,v,Tab,Update,SetParentSize,Start)
                                 end
                                 v[ind] = NewValue
                                 Update(v)
+                                isArray:set(TableType(v) == 1);
                             end,function(Size: number)
                                 -- Update Size
                                 ChildrenSize:set(ChildrenSize:get() + Size)
@@ -401,6 +408,7 @@ local function TableUi(i,v,Tab,Update,SetParentSize,Start)
                                 end
                                 v[ind] = NewValue
                                 Update(v)
+                                isArray:set(TableType(v) == 1);
                                 if typeof(NewValue) == "table" then
                                     RenderingValues:set(v)
                                 end
@@ -436,6 +444,7 @@ local function TableUi(i,v,Tab,Update,SetParentSize,Start)
                     v = nil
                     DelFrameVis:set(true)
                     Update(nil)
+                    isArray:set(TableType(v) == 1);
                     for _,f in pairs(Dels) do
                         f()
                     end
@@ -486,6 +495,8 @@ local function TableUi(i,v,Tab,Update,SetParentSize,Start)
                             end
                             v[1] = "value"
                             Update(v)
+                            isArray:set(TableType(v) == 1);
+
                         elseif t == 2 then
                             Count+=1
                             if Open:get() == true then
@@ -507,6 +518,7 @@ local function TableUi(i,v,Tab,Update,SetParentSize,Start)
                             end
                             v[max+1] = "value"
                             Update(v)
+                            isArray:set(TableType(v) == 1);
                         elseif t == 3 then
                             if v[index] ~= nil then
                                 return
@@ -524,6 +536,7 @@ local function TableUi(i,v,Tab,Update,SetParentSize,Start)
                             vText:set("table: ...")
                             v[index] = "value"
                             Update(v)
+                            isArray:set(TableType(v) == 1);
                         end
                         RenderingValues:set(v)
                     end

@@ -121,6 +121,7 @@ function Module:GetKey(Key)
         -- No Data
         Module.BlackoutVis:set(true)
     else
+        Module.BlackoutVis:set(false)
         Module.OriginalData:set({[Key] = CloneData(Data)})
         Module.CurrentData:set({[Key] = CloneData(Data)})
     end

@@ -33,6 +33,7 @@ game.ReplicatedStorage.Comm.OnServerInvoke = function(p,Req,Name,Value)
                 [4] = "Example!";
                 [5] = {}
             };
+            Array = table.create(25,true);
             Title = "Example Data";
             Points = 100;
             Enabled = true;
